@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sine – Global Horoscope Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg-color: #1a0f0a;
+  --card-color: #2a1812;
+  --highlight-color: #d4a038;
+  --text-color: #f2e4c0;
+  --modal-bg: rgba(0, 0, 0, 0.85);
+  --accent-color: #bf3f26;
+  --font-title: 'Cinzel Decorative', serif;
+  --font-body: 'Libre Baskerville', serif;
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+header {
+  text-align: center;
+  padding: 2rem;
+  border-bottom: 2px solid var(--highlight-color);
+}
+
+header h1 {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  color: var(--highlight-color);
+  margin: 0;
+}
+
+#birth-form {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+input[type="date"] {
+  padding: 0.5rem;
+  font-size: 1rem;
+  background: var(--card-color);
+  color: var(--text-color);
+  border: 1px solid var(--highlight-color);
+}
+
+button {
+  background: var(--highlight-color);
+  color: var(--bg-color);
+  font-weight: bold;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: var(--accent-color);
+}
+
+#results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.card {
+  background: var(--card-color);
+  border: 2px solid var(--highlight-color);
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card:hover {
+  border-color: var(--accent-color);
+}
+
+.card img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--highlight-color);
+}
+
+.card h2 {
+  margin: 0.5rem 0;
+  color: var(--highlight-color);
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--modal-bg);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: var(--card-color);
+  padding: 2rem;
+  max-width: 600px;
+  border: 2px solid var(--highlight-color);
+  overflow-y: auto;
+  max-height: 80%;
+}
+
+.modal-close {
+  float: right;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--highlight-color);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔆 Sine – Global Horoscope Portal 🔆</h1>
+  <form id="birth-form">
+    <input type="date" id="birthdate" required>
+    <button type="submit">Reveal My Signs</button>
+  </form>
+</header>
+
+<section id="results"></section>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span id="modal-close" class="modal-close">X</span>
+    <h2 id="modal-title"></h2>
+    <img id="modal-image" src="" alt="" style="max-width:100%; margin:1rem 0;">
+    <p id="modal-lore"></p>
+  </div>
+</div>
+
+<script>
+// ===== Western Horoscope Dataset =====
+const westernData = {
+  "Aries": {
+    quick: "The Trailblazer.",
+    image: "images/western/aries.png",
+    lore: "Aries is bold, direct, and passionate. You thrive on new challenges and move quickly toward your goals. Your challenge is practicing patience and considering long-term impact."
+  },
+  "Taurus": {
+    quick: "The Steadfast Builder.",
+    image: "images/western/taurus.png",
+    lore: "Taurus values stability, beauty, and persistence. You create lasting foundations but must watch for stubbornness that resists needed change."
+  },
+  "Gemini": {
+    quick: "The Messenger.",
+    image: "images/western/gemini.png",
+    lore: "Gemini brings curiosity, adaptability, and communication. You excel at connecting ideas but must guard against scattering your focus."
+  },
+  "Cancer": {
+    quick: "The Nurturer.",
+    image: "images/western/cancer.png",
+    lore: "Cancer protects and supports with deep empathy. Your challenge is maintaining healthy boundaries while caring for others."
+  },
+  "Leo": {
+    quick: "The Radiant Heart.",
+    image: "images/western/leo.png",
+    lore: "Leo shines with charisma, creativity, and courage. You inspire others but must avoid the trap of pride."
+  },
+  "Virgo": {
+    quick: "The Refiner.",
+    image: "images/western/virgo.png",
+    lore: "Virgo seeks precision, improvement, and service. You bring order to chaos but must avoid over-criticism."
+  },
+  "Libra": {
+    quick: "The Harmonizer.",
+    image: "images/western/libra.png",
+    lore: "Libra values balance, beauty, and fairness. You create harmony in relationships but must learn to make firm choices."
+  },
+  "Scorpio": {
+    quick: "The Transformer.",
+    image: "images/western/scorpio.png",
+    lore: "Scorpio is intense, intuitive, and transformative. You embrace deep change but must release control when it no longer serves."
+  },
+  "Sagittarius": {
+    quick: "The Seeker.",
+    image: "images/western/sagittarius.png",
+    lore: "Sagittarius pursues truth, adventure, and meaning. Your challenge is grounding your visions in consistent action."
+  },
+  "Capricorn": {
+    quick: "The Strategist.",
+    image: "images/western/capricorn.png",
+    lore: "Capricorn builds with discipline, ambition, and structure. You achieve much but must allow yourself moments of joy."
+  },
+  "Aquarius": {
+    quick: "The Visionary.",
+    image: "images/western/aquarius.png",
+    lore: "Aquarius innovates, liberates, and uplifts communities. Your challenge is staying connected to the emotional world."
+  },
+  "Pisces": {
+    quick: "The Dreamer.",
+    image: "images/western/pisces.png",
+    lore: "Pisces moves through life with compassion, intuition, and imagination. You must learn to anchor dreams into reality."
+  }
+};
+
+// ===== Chinese Horoscope Dataset (abbreviated for brevity here) =====
+// Fill in with full 60-year cycle
+const chineseData = {
+    // RAT
+  "Wood Rat": {
+    quick: "The Strategic Planner.",
+    image: "images/chinese/wood_rat.png",
+    lore: "The Rat is clever, resourceful, and quick to seize opportunities. Wood brings growth, cooperation, and vision for the future. You excel at building networks and mapping long-term goals. Your strength is adaptability; your challenge is resisting the urge to overextend. Best with Dragon’s courage and Monkey’s wit, but may feel strain with Horse’s independence."
+  },
+  "Fire Rat": {
+    quick: "The Spark of Ideas.",
+    image: "images/chinese/fire_rat.png",
+    lore: "Fire fuels the Rat’s natural ingenuity with passion and boldness. You’re quick to act on inspiration and can inspire others with your enthusiasm. Your challenge is to follow through once the excitement fades. Strong with Ox’s steadiness and Monkey’s creativity, but may find Rabbit’s caution slowing your pace."
+  },
+  "Earth Rat": {
+    quick: "The Grounded Strategist.",
+    image: "images/chinese/earth_rat.png",
+    lore: "Earth steadies the Rat’s quick mind, giving patience and practicality. You’re skilled at turning ideas into lasting results. Your challenge is avoiding over-caution when risk could bring growth. Works well with Dragon’s boldness and Snake’s insight, but may clash with Goat’s unpredictability."
+  },
+  "Metal Rat": {
+    quick: "The Precise Innovator.",
+    image: "images/chinese/metal_rat.png",
+    lore: "Metal sharpens the Rat’s focus and ambition. You’re disciplined and clear in your goals, with a strong sense of strategy. Your challenge is softening rigidity when flexibility is needed. Compatible with Monkey’s cleverness and Ox’s discipline; tension with Horse’s free spirit."
+  },
+  "Water Rat": {
+    quick: "The Adaptive Connector.",
+    image: "images/chinese/water_rat.png",
+    lore: "Water adds intuition and adaptability to the Rat’s cleverness. You read situations well and navigate change with skill. Your challenge is avoiding over-analysis that delays action. Works well with Dragon’s energy and Pig’s kindness, but may find Rooster’s directness abrasive."
+  },
+
+  // OX
+  "Wood Ox": {
+    quick: "The Patient Builder.",
+    image: "images/chinese/wood_ox.png",
+    lore: "The Ox is steady, reliable, and hardworking. Wood adds vision and growth to your persistence. You build slowly but with lasting results. Your challenge is staying open to change when the path shifts. Best with Snake’s wisdom and Rooster’s precision; tension with Goat’s unpredictability."
+  },
+  "Fire Ox": {
+    quick: "The Determined Leader.",
+    image: "images/chinese/fire_ox.png",
+    lore: "Fire gives the Ox intensity and charisma. You lead with determination and inspire through action. Your challenge is tempering force with diplomacy. Works well with Rat’s cleverness and Rooster’s focus, but may lock horns with Horse’s independence."
+  },
+  "Earth Ox": {
+    quick: "The Solid Foundation.",
+    image: "images/chinese/earth_ox.png",
+    lore: "Earth strengthens the Ox’s natural stability. You value tradition, loyalty, and careful progress. Your challenge is avoiding stubbornness that resists needed change. Compatible with Snake’s insight and Rat’s planning; may find Tiger’s impulsiveness disruptive."
+  },
+  "Metal Ox": {
+    quick: "The Resolute Worker.",
+    image: "images/chinese/metal_ox.png",
+    lore: "Metal gives the Ox precision and a strong moral code. You are disciplined, principled, and dependable. Your challenge is avoiding inflexibility. Works well with Rooster’s accuracy and Rat’s cunning; may find Goat’s spontaneity frustrating."
+  },
+  "Water Ox": {
+    quick: "The Flexible Builder.",
+    image: "images/chinese/water_ox.png",
+    lore: "Water softens the Ox’s rigidity and brings adaptability. You combine persistence with the ability to adjust plans. Your challenge is maintaining momentum when the current shifts. Best with Snake’s depth and Pig’s generosity; tension with Horse’s restlessness."
+  },
+
+  // TIGER
+  "Wood Tiger": {
+    quick: "The Expansive Adventurer.",
+    image: "images/chinese/wood_tiger.png",
+    lore: "The Tiger is bold, independent, and driven. Wood adds vision and openness to collaboration. You thrive in new ventures and inspire others through courage. Your challenge is balancing freedom with commitment. Best with Horse’s spirit and Dog’s loyalty; tension with Monkey’s trickiness."
+  },
+  "Fire Tiger": {
+    quick: "The Fearless Leader.",
+    image: "images/chinese/fire_tiger.png",
+    lore: "Fire fuels the Tiger’s passion and charisma. You lead naturally and aren’t afraid to take risks. Your challenge is channeling intensity so it inspires rather than intimidates. Works well with Horse’s dynamism and Pig’s warmth; may clash with Snake’s calculated ways."
+  },
+  "Earth Tiger": {
+    quick: "The Grounded Trailblazer.",
+    image: "images/chinese/earth_tiger.png",
+    lore: "Earth steadies the Tiger’s impulsiveness, giving persistence and patience. You combine courage with a strategic approach. Your challenge is avoiding over-caution that dulls your edge. Best with Dog’s loyalty and Horse’s drive; tension with Monkey’s unpredictability."
+  },
+  "Metal Tiger": {
+    quick: "The Resolute Protector.",
+    image: "images/chinese/metal_tiger.png",
+    lore: "Metal gives the Tiger sharp focus and unshakable principles. You defend what you value fiercely. Your challenge is allowing flexibility when circumstances demand. Works well with Horse’s vitality and Dog’s commitment; may conflict with Ox’s stubborn pace."
+  },
+  "Water Tiger": {
+    quick: "The Intuitive Explorer.",
+    image: "images/chinese/water_tiger.png",
+    lore: "Water brings adaptability and intuition to the Tiger’s boldness. You sense opportunities and risks before they’re clear to others. Your challenge is following through when tides change. Best with Pig’s generosity and Horse’s spirit; may struggle with Rooster’s strictness."
+  },
+
+  // MONKEY (your example included)
+  "Wood Monkey": {
+    quick: "The Inventive Negotiator.",
+    image: "images/chinese/wood_monkey.png",
+    lore: "The Monkey is quick-witted, playful, and inventive. Wood adds growth, cooperation, and the ability to build lasting connections. Your challenge is resisting the temptation to juggle too many ventures at once. Works well with Rat’s planning and Dragon’s daring; tension with Tiger’s pride."
+  },
+  "Fire Monkey": {
+    quick: "The Charismatic Problem-Solver.",
+    image: "images/chinese/fire_monkey.png",
+    lore: "Fire gives the Monkey extra charm and drive. You shine in social situations and thrive under pressure. Your challenge is pacing yourself to avoid burnout. Best with Rat’s cunning and Snake’s depth; may clash with Ox’s slow pace."
+  },
+  "Earth Monkey": {
+    quick: "The Practical Innovator.",
+    image: "images/chinese/earth_monkey.png",
+    lore: "Earth grounds the Monkey’s quick mind, making you reliable as well as inventive. Your challenge is to avoid becoming overly cautious in creative ventures. Works well with Dragon’s strength and Rat’s planning; tension with Goat’s unpredictability."
+  },
+  "Metal Monkey": {
+    quick: "The Sharp Strategist.",
+    image: "images/chinese/metal_monkey.png",
+    lore: "Metal sharpens the Monkey’s wit into precision and strategy. You see several steps ahead in both business and relationships. Your challenge is balancing calculation with empathy. Best with Snake’s insight and Rat’s resourcefulness; tension with Pig’s easygoing nature."
+  },
+  "Water Monkey": {
+    quick: "The Adaptable Innovator.",
+    image: "images/chinese/water_monkey.png",
+    lore: "The Monkey brings cleverness, charm, and agility; Water adds flexibility, intuition, and a gift for reading the flow of events. This combination makes you inventive and socially skilled, able to adapt to changing situations with ease. Your strength is finding creative solutions others miss. Your challenge is to avoid scattering your focus or using wit to dodge deeper issues. You work well with Rat’s resourcefulness and Dragon’s boldness, but may clash with Tiger’s pride or Snake’s secrecy."
+  }
+	 // RABBIT
+  ,"Wood Rabbit": {
+    quick: "The Harmonious Planner.",
+    image: "images/chinese/wood_rabbit.png",
+    lore: "The Rabbit is gentle, diplomatic, and graceful. Wood adds vision and a willingness to nurture growth. You create harmony and plan with care. Your challenge is avoiding indecision when facing conflict. Works well with Goat’s creativity and Pig’s kindness; tension with Rooster’s bluntness."
+  },
+  "Fire Rabbit": {
+    quick: "The Passionate Peacemaker.",
+    image: "images/chinese/fire_rabbit.png",
+    lore: "Fire warms the Rabbit’s grace with charisma and drive. You bring people together while pursuing your goals with quiet determination. Your challenge is to keep emotions from clouding judgment. Best with Dog’s loyalty and Goat’s artistry; may clash with Rat’s ambition."
+  },
+  "Earth Rabbit": {
+    quick: "The Steady Protector.",
+    image: "images/chinese/earth_rabbit.png",
+    lore: "Earth strengthens the Rabbit’s reliability and loyalty. You build strong foundations for relationships and projects. Your challenge is remaining open to new ideas. Works well with Pig’s sincerity and Goat’s adaptability; tension with Tiger’s unpredictability."
+  },
+  "Metal Rabbit": {
+    quick: "The Refined Idealist.",
+    image: "images/chinese/metal_rabbit.png",
+    lore: "Metal gives the Rabbit precision and high standards. You pursue beauty and fairness with determination. Your challenge is avoiding perfectionism. Best with Snake’s wisdom and Goat’s elegance; may clash with Rooster’s competitive nature."
+  },
+  "Water Rabbit": {
+    quick: "The Intuitive Diplomat.",
+    image: "images/chinese/water_rabbit.png",
+    lore: "Water deepens the Rabbit’s empathy and adaptability. You navigate relationships with insight and care. Your challenge is maintaining boundaries. Works well with Pig’s warmth and Dog’s trust; tension with Monkey’s unpredictability."
+  },
+
+  // DRAGON
+  "Wood Dragon": {
+    quick: "The Visionary Leader.",
+    image: "images/chinese/wood_dragon.png",
+    lore: "The Dragon is bold, charismatic, and ambitious. Wood adds growth and cooperation to your strength. You inspire movements and unite people. Your challenge is balancing idealism with practical steps. Works well with Rat’s strategy and Monkey’s creativity; tension with Dog’s criticism."
+  },
+  "Fire Dragon": {
+    quick: "The Radiant Power.",
+    image: "images/chinese/fire_dragon.png",
+    lore: "Fire intensifies the Dragon’s passion and authority. You take charge and lead with conviction. Your challenge is tempering pride with humility. Best with Rat’s resourcefulness and Rooster’s precision; may clash with Ox’s stubborn pace."
+  },
+  "Earth Dragon": {
+    quick: "The Grounded Ruler.",
+    image: "images/chinese/earth_dragon.png",
+    lore: "Earth gives the Dragon stability and patience. You combine ambition with a long-term vision. Your challenge is avoiding over-caution. Works well with Snake’s wisdom and Rat’s planning; tension with Goat’s unpredictability."
+  },
+  "Metal Dragon": {
+    quick: "The Disciplined Champion.",
+    image: "images/chinese/metal_dragon.png",
+    lore: "Metal sharpens the Dragon’s focus and willpower. You pursue goals with unmatched determination. Your challenge is softening rigidity when flexibility is needed. Best with Monkey’s cunning and Rat’s cleverness; may clash with Dog’s scrutiny."
+  },
+  "Water Dragon": {
+    quick: "The Intuitive Leader.",
+    image: "images/chinese/water_dragon.png",
+    lore: "Water adds insight and adaptability to the Dragon’s power. You lead with vision and adjust when needed. Your challenge is staying consistent when tides shift. Works well with Pig’s generosity and Rat’s adaptability; tension with Rooster’s inflexibility."
+  },
+
+  // SNAKE
+  "Wood Snake": {
+    quick: "The Wise Builder.",
+    image: "images/chinese/wood_snake.png",
+    lore: "The Snake is insightful, strategic, and elegant. Wood adds growth and a cooperative spirit. You excel in building alliances. Your challenge is avoiding secrecy that isolates you. Best with Ox’s patience and Rooster’s precision; may clash with Tiger’s boldness."
+  },
+  "Fire Snake": {
+    quick: "The Charismatic Strategist.",
+    image: "images/chinese/fire_snake.png",
+    lore: "Fire intensifies the Snake’s allure and confidence. You draw others in while carefully directing outcomes. Your challenge is balancing passion with patience. Works well with Monkey’s wit and Rooster’s skill; tension with Pig’s openness."
+  },
+  "Earth Snake": {
+    quick: "The Practical Mystic.",
+    image: "images/chinese/earth_snake.png",
+    lore: "Earth grounds the Snake’s wisdom, giving patience and realism. You merge insight with steady progress. Your challenge is avoiding excessive caution. Best with Ox’s reliability and Rooster’s order; tension with Horse’s restlessness."
+  },
+  "Metal Snake": {
+    quick: "The Precise Visionary.",
+    image: "images/chinese/metal_snake.png",
+    lore: "Metal sharpens the Snake’s intellect and focus. You plan meticulously and value skill. Your challenge is allowing for change. Works well with Monkey’s cleverness and Ox’s discipline; may clash with Goat’s unpredictability."
+  },
+  "Water Snake": {
+    quick: "The Intuitive Sage.",
+    image: "images/chinese/water_snake.png",
+    lore: "Water deepens the Snake’s perception and adaptability. You sense hidden motives and respond with subtlety. Your challenge is maintaining trust in others. Best with Rooster’s clarity and Ox’s patience; tension with Tiger’s impulsiveness."
+  },
+
+  // HORSE
+  "Wood Horse": {
+    quick: "The Adventurous Builder.",
+    image: "images/chinese/wood_horse.png",
+    lore: "The Horse is energetic, free-spirited, and sociable. Wood adds cooperation and vision. You thrive in projects that mix movement and teamwork. Your challenge is maintaining focus over the long term. Works well with Tiger’s courage and Goat’s creativity; tension with Rat’s cautiousness."
+  },
+  "Fire Horse": {
+    quick: "The Unstoppable Spirit.",
+    image: "images/chinese/fire_horse.png",
+    lore: "Fire heightens the Horse’s energy and independence. You move quickly toward your goals and inspire others with your passion. Your challenge is pacing yourself to avoid burnout. Best with Tiger’s drive and Dog’s loyalty; may clash with Ox’s slow pace."
+  },
+  "Earth Horse": {
+    quick: "The Steady Rider.",
+    image: "images/chinese/earth_horse.png",
+    lore: "Earth steadies the Horse’s wanderlust, giving persistence and dependability. You blend enthusiasm with follow-through. Your challenge is avoiding stubbornness in your direction. Works well with Goat’s artistry and Dog’s faithfulness; tension with Monkey’s unpredictability."
+  },
+  "Metal Horse": {
+    quick: "The Determined Racer.",
+    image: "images/chinese/metal_horse.png",
+    lore: "Metal sharpens the Horse’s willpower and precision. You push yourself and others toward excellence. Your challenge is allowing for rest. Best with Tiger’s fire and Dog’s steadfastness; tension with Pig’s easy pace."
+  },
+  "Water Horse": {
+    quick: "The Adaptive Explorer.",
+    image: "images/chinese/water_horse.png",
+    lore: "Water brings adaptability and emotional depth to the Horse’s freedom. You adjust quickly to new paths. Your challenge is staying committed when novelty fades. Works well with Goat’s imagination and Tiger’s courage; tension with Rooster’s rigidity."
+  },
+
+  // GOAT
+  "Wood Goat": {
+    quick: "The Artistic Builder.",
+    image: "images/chinese/wood_goat.png",
+    lore: "The Goat is gentle, creative, and compassionate. Wood adds growth and collaboration. You thrive in supportive communities. Your challenge is building resilience when faced with conflict. Best with Rabbit’s grace and Pig’s kindness; may clash with Ox’s firmness."
+  },
+  "Fire Goat": {
+    quick: "The Passionate Creator.",
+    image: "images/chinese/fire_goat.png",
+    lore: "Fire fuels the Goat’s artistry and enthusiasm. You inspire others with your warmth and creativity. Your challenge is maintaining stability. Works well with Horse’s vitality and Rabbit’s charm; tension with Rooster’s strictness."
+  },
+  "Earth Goat": {
+    quick: "The Steady Nurturer.",
+    image: "images/chinese/earth_goat.png",
+    lore: "Earth grounds the Goat’s imagination, making your care practical and lasting. Your challenge is avoiding over-dependence on comfort zones. Best with Pig’s sincerity and Rabbit’s diplomacy; may clash with Tiger’s daring."
+  },
+  "Metal Goat": {
+    quick: "The Refined Creator.",
+    image: "images/chinese/metal_goat.png",
+    lore: "Metal gives the Goat high standards and a drive for beauty. You blend aesthetics with discipline. Your challenge is softening perfectionism. Works well with Rabbit’s elegance and Pig’s warmth; tension with Rat’s ambition."
+  },
+  "Water Goat": {
+    quick: "The Intuitive Artist.",
+    image: "images/chinese/water_goat.png",
+    lore: "Water deepens the Goat’s empathy and emotional creativity. You express yourself in ways that touch others. Your challenge is guarding against mood-driven indecision. Best with Rabbit’s diplomacy and Pig’s generosity; tension with Ox’s firmness."
+  },
+
+  // ROOSTER
+  "Wood Rooster": {
+    quick: "The Honest Organizer.",
+    image: "images/chinese/wood_rooster.png",
+    lore: "The Rooster is confident, observant, and detail-oriented. Wood adds growth and fairness. You organize with a sense of justice. Your challenge is staying flexible when plans shift. Works well with Ox’s stability and Snake’s insight; tension with Rabbit’s sensitivity."
+  },
+  "Fire Rooster": {
+    quick: "The Dynamic Performer.",
+    image: "images/chinese/fire_rooster.png",
+    lore: "Fire boosts the Rooster’s charisma and determination. You shine in leadership and public roles. Your challenge is balancing pride with humility. Best with Dragon’s ambition and Ox’s steadiness; may clash with Dog’s critique."
+  },
+  "Earth Rooster": {
+    quick: "The Reliable Realist.",
+    image: "images/chinese/earth_rooster.png",
+    lore: "Earth steadies the Rooster’s precision, making you dependable and practical. Your challenge is softening rigidity. Works well with Snake’s wisdom and Ox’s loyalty; tension with Goat’s free spirit."
+  },
+  "Metal Rooster": {
+    quick: "The Perfectionist Planner.",
+    image: "images/chinese/metal_rooster.png",
+    lore: "Metal sharpens the Rooster’s focus and standards. You demand excellence from yourself and others. Your challenge is easing judgment. Best with Ox’s discipline and Snake’s skill; may clash with Pig’s laid-back nature."
+  },
+  "Water Rooster": {
+    quick: "The Perceptive Speaker.",
+    image: "images/chinese/water_rooster.png",
+    lore: "Water adds intuition and adaptability to the Rooster’s clarity. You communicate with insight and read situations well. Your challenge is avoiding over-critical words. Works well with Dragon’s charisma and Ox’s loyalty; tension with Rabbit’s cautiousness."
+  },
+
+  // DOG
+  "Wood Dog": {
+    quick: "The Loyal Protector.",
+    image: "images/chinese/wood_dog.png",
+    lore: "The Dog is faithful, honest, and protective. Wood adds vision and cooperation. You defend those you care for while working toward shared goals. Your challenge is letting go of grudges. Best with Tiger’s courage and Horse’s energy; may clash with Rooster’s bluntness."
+  },
+  "Fire Dog": {
+    quick: "The Passionate Guardian.",
+    image: "images/chinese/fire_dog.png",
+    lore: "Fire heightens the Dog’s loyalty and courage. You fight for justice and protect the vulnerable. Your challenge is avoiding burnout from overcommitment. Works well with Rabbit’s diplomacy and Tiger’s drive; tension with Rooster’s criticism."
+  },
+  "Earth Dog": {
+    quick: "The Steady Ally.",
+    image: "images/chinese/earth_dog.png",
+    lore: "Earth steadies the Dog’s loyalty, making you dependable and calm. Your challenge is opening to new experiences. Best with Horse’s optimism and Tiger’s boldness; may clash with Dragon’s dominance."
+  },
+  "Metal Dog": {
+    quick: "The Principled Defender.",
+    image: "images/chinese/metal_dog.png",
+    lore: "Metal sharpens the Dog’s sense of justice and discipline. You hold strong moral standards. Your challenge is tempering inflexibility. Works well with Horse’s spirit and Tiger’s commitment; tension with Goat’s unpredictability."
+  },
+  "Water Dog": {
+    quick: "The Intuitive Friend.",
+    image: "images/chinese/water_dog.png",
+    lore: "Water deepens the Dog’s empathy and adaptability. You connect deeply and adjust to others’ needs. Your challenge is maintaining your own boundaries. Best with Rabbit’s grace and Pig’s kindness; may clash with Rooster’s directness."
+  },
+
+  // PIG
+  "Wood Pig": {
+    quick: "The Generous Builder.",
+    image: "images/chinese/wood_pig.png",
+    lore: "The Pig is sincere, generous, and kind. Wood adds vision and cooperation to your warmth. Your challenge is guarding against being taken advantage of. Works well with Goat’s artistry and Rabbit’s diplomacy; tension with Snake’s secrecy."
+  },
+  "Fire Pig": {
+    quick: "The Warmhearted Leader.",
+    image: "images/chinese/fire_pig.png",
+    lore: "Fire energizes the Pig’s generosity with charisma and drive. You inspire others through kindness and example. Your challenge is avoiding impulsive decisions. Best with Tiger’s courage and Rabbit’s charm; may clash with Rooster’s sharpness."
+  },
+  "Earth Pig": {
+    quick: "The Reliable Friend.",
+    image: "images/chinese/earth_pig.png",
+    lore: "Earth grounds the Pig’s generosity, making you steady and dependable. Your challenge is resisting stubborn comfort zones. Works well with Goat’s creativity and Rabbit’s grace; tension with Monkey’s unpredictability."
+  },
+  "Metal Pig": {
+    quick: "The Disciplined Giver.",
+    image: "images/chinese/metal_pig.png",
+    lore: "Metal gives the Pig determination and high standards. You combine kindness with structure. Your challenge is softening perfectionism. Best with Rabbit’s elegance and Goat’s artistry; may clash with Snake’s reserved nature."
+  },
+  "Water Pig": {
+    quick: "The Compassionate Listener.",
+    image: "images/chinese/water_pig.png",
+    lore: "Water deepens the Pig’s empathy and adaptability. You connect with people on a profound level. Your challenge is protecting your energy from over-giving. Works well with Goat’s artistry and Rabbit’s diplomacy; tension with Rooster’s bluntness."
+  }
+  // ... full dataset here
+};
+
+// ===== Mayan Horoscope =====
+const mayanDays = {
+	"Imix": {
+    quick: "The Primordial Source.",
+    image: "images/mayan/days/imix.png",
+    lore: "Imix is the cosmic womb, the first stirring of creation. In you, this manifests as raw potential and instinctive creativity. Your challenge is learning to direct this energy into focused action. Compatible with Chuen’s playfulness and Ben’s leadership."
+  },
+  "Ik": {
+    quick: "The Breath of Spirit.",
+    image: "images/mayan/days/ik.png",
+    lore: "Ik represents wind, communication, and life force. You carry the gift of ideas and the ability to inspire movement in others. Your challenge is maintaining consistency. Harmonizes with Eb’s journeying spirit and Men’s vision."
+  },
+  "Akbal": {
+    quick: "The Dreaming House.",
+    image: "images/mayan/days/akbal.png",
+    lore: "Akbal is night, the sanctuary of dreams and the unknown. You hold intuitive depth and a gift for guiding others through uncertainty. Your challenge is to step into the light when it’s time to act. Works well with Ix’s magic and Caban’s insight."
+  },
+  "Kan": {
+    quick: "The Seed of Growth.",
+    image: "images/mayan/days/kan.png",
+    lore: "Kan symbolizes potential, germination, and stored energy. You excel at initiating projects and nurturing beginnings. Your challenge is patience. Strong with Muluc’s emotion and Chicchan’s life force."
+  },
+  "Chicchan": {
+    quick: "The Serpent Force.",
+    image: "images/mayan/days/chicchan.png",
+    lore: "Chicchan is primal vitality, instinct, and life energy. You move others through passion and presence. Your challenge is channeling intensity constructively. Compatible with Men’s vision and Cimi’s transformation."
+  },
+  "Cimi": {
+    quick: "The Transformer.",
+    image: "images/mayan/days/cimi.png",
+    lore: "Cimi represents death, change, and renewal. You are a guide in transitions, helping others release and begin anew. Your challenge is embracing change in your own life. Works well with Cauac’s cleansing and Akbal’s introspection."
+  },
+  "Manik": {
+    quick: "The Deer’s Grace.",
+    image: "images/mayan/days/manik.png",
+    lore: "Manik is about balance, protection, and healing. You carry a steady presence that nurtures trust. Your challenge is acting when the moment calls for it. Harmonizes with Eb’s pathfinding and Lamat’s abundance."
+  },
+  "Lamat": {
+    quick: "The Star of Abundance.",
+    image: "images/mayan/days/lamat.png",
+    lore: "Lamat brings beauty, fertility, and creative flow. You naturally multiply what you focus on. Your challenge is choosing what seeds to water. Works well with Kan’s potential and Muluc’s emotion."
+  },
+  "Muluc": {
+    quick: "The Offering.",
+    image: "images/mayan/days/muluc.png",
+    lore: "Muluc is water, emotion, and the act of giving. You carry deep compassion and the ability to restore harmony. Your challenge is avoiding self-sacrifice without balance. Compatible with Oc’s loyalty and Kan’s beginnings."
+  },
+  "Oc": {
+    quick: "The Faithful Companion.",
+    image: "images/mayan/days/oc.png",
+    lore: "Oc symbolizes loyalty, guidance, and protection. You are steadfast in your bonds and serve as a trustworthy ally. Your challenge is avoiding overprotectiveness. Works well with Muluc’s empathy and Eb’s pathfinding."
+  },
+  "Chuen": {
+    quick: "The Playful Weaver.",
+    image: "images/mayan/days/chuen.png",
+    lore: "Chuen is artistry, humor, and weaving the threads of life. You bring joy and connection wherever you go. Your challenge is staying focused on serious matters. Compatible with Imix’s creativity and Ben’s authority."
+  },
+  "Eb": {
+    quick: "The Road of Life.",
+    image: "images/mayan/days/eb.png",
+    lore: "Eb represents journeys, destiny, and the human path. You excel in exploration and guiding others. Your challenge is avoiding aimlessness. Works well with Ik’s inspiration and Manik’s stability."
+  },
+  "Ben": {
+    quick: "The Reed Leader.",
+    image: "images/mayan/days/ben.png",
+    lore: "Ben is authority, protection, and the guiding staff. You are a natural leader who values order and service. Your challenge is flexibility. Harmonizes with Chuen’s creativity and Men’s vision."
+  },
+  "Ix": {
+    quick: "The Jaguar Magician.",
+    image: "images/mayan/days/ix.png",
+    lore: "Ix is magic, intuition, and sacred space. You walk between worlds and guard ancient wisdom. Your challenge is grounding your insights. Works well with Akbal’s depth and Cauac’s cleansing."
+  },
+  "Men": {
+    quick: "The Eagle Vision.",
+    image: "images/mayan/days/men.png",
+    lore: "Men brings foresight, clarity, and higher perspective. You see patterns others miss. Your challenge is acting on your visions. Compatible with Chicchan’s vitality and Ben’s leadership."
+  },
+  "Cib": {
+    quick: "The Wise Counselor.",
+    image: "images/mayan/days/cib.png",
+    lore: "Cib is wisdom, forgiveness, and the voice of the ancestors. You offer guidance rooted in experience. Your challenge is letting go of old wounds. Works well with Caban’s insight and Ix’s magic."
+  },
+  "Caban": {
+    quick: "The Earth’s Movement.",
+    image: "images/mayan/days/caban.png",
+    lore: "Caban is knowledge, synchronicity, and the heartbeat of the earth. You navigate life through signs and patterns. Your challenge is acting decisively. Best with Akbal’s dreams and Cib’s wisdom."
+  },
+  "Etznab": {
+    quick: "The Mirror of Truth.",
+    image: "images/mayan/days/etznab.png",
+    lore: "Etznab is reflection, clarity, and sudden insight. You cut through illusion to reveal the truth. Your challenge is delivering truth with compassion. Works well with Cauac’s renewal and Caban’s awareness."
+  },
+  "Cauac": {
+    quick: "The Storm Bringer.",
+    image: "images/mayan/days/cauac.png",
+    lore: "Cauac is cleansing, transformation, and release. You clear the way for new growth. Your challenge is avoiding unnecessary upheaval. Compatible with Cimi’s transformation and Etznab’s clarity."
+  },
+  "Ahau": {
+    quick: "The Solar Lord.",
+    image: "images/mayan/days/ahau.png",
+    lore: "Ahau represents completion, enlightenment, and the sun’s radiance. You bring light and closure to cycles. Your challenge is humility in leadership. Works well with Imix’s creation and Men’s vision."
+  }
+	
+  // ... full Mayan days dataset from before
+};
+const mayanTones = {
+	  1: {
+    quick: "Magnetic – The Unifying Force.",
+    image: "images/mayan/tones/tone_1.png",
+    lore: "Magnetic tone is the beginning of a cycle, drawing all energy toward a single purpose. Your gift is focus; your challenge is avoiding tunnel vision."
+  },
+  2: {
+    quick: "Lunar – The Challenge Bringer.",
+    image: "images/mayan/tones/tone_2.png",
+    lore: "Lunar tone reveals polarity and duality. You bring contrast and clarity to situations. Your challenge is embracing both sides without conflict."
+  },
+  3: {
+    quick: "Electric – The Activator.",
+    image: "images/mayan/tones/tone_3.png",
+    lore: "Electric tone sparks action through service and interaction. You energize others, but must guard against scattering your energy."
+  },
+  4: {
+    quick: "Self-Existing – The Shaper.",
+    image: "images/mayan/tones/tone_4.png",
+    lore: "Self-Existing tone defines form and structure. You give shape to ideas, yet must avoid rigidity that blocks flow."
+  },
+  5: {
+    quick: "Overtone – The Empowerer.",
+    image: "images/mayan/tones/tone_5.png",
+    lore: "Overtone tone radiates confidence and leadership. You inspire others, but must remember to empower rather than dominate."
+  },
+  6: {
+    quick: "Rhythmic – The Balancer.",
+    image: "images/mayan/tones/tone_6.png",
+    lore: "Rhythmic tone seeks equilibrium and harmony. You maintain order, yet must avoid stagnation through over-stability."
+  },
+  7: {
+    quick: "Resonant – The Harmonizer.",
+    image: "images/mayan/tones/tone_7.png",
+    lore: "Resonant tone channels inspiration and alignment. You attune to subtle energies, but must stay grounded."
+  },
+  8: {
+    quick: "Galactic – The Integrity Keeper.",
+    image: "images/mayan/tones/tone_8.png",
+    lore: "Galactic tone upholds harmony between ideals and action. You bring moral clarity, but must avoid self-righteousness."
+  },
+  9: {
+    quick: "Solar – The Intent Holder.",
+    image: "images/mayan/tones/tone_9.png",
+    lore: "Solar tone pulses with intention and completion. You direct energy toward fulfillment, but must avoid burning out."
+  },
+  10: {
+    quick: "Planetary – The Perfecter.",
+    image: "images/mayan/tones/tone_10.png",
+    lore: "Planetary tone strives for manifestation and perfection. You build tangible results, yet must avoid obsessive control."
+  },
+  11: {
+    quick: "Spectral – The Liberator.",
+    image: "images/mayan/tones/tone_11.png",
+    lore: "Spectral tone releases and dissolves. You bring freedom and change, but must avoid destructiveness without purpose."
+  },
+  12: {
+    quick: "Crystal – The Cooperator.",
+    image: "images/mayan/tones/tone_12.png",
+    lore: "Crystal tone fosters cooperation and shared purpose. You unite communities, but must avoid losing your own voice."
+  },
+  13: {
+    quick: "Cosmic – The Enduring Presence.",
+    image: "images/mayan/tones/tone_13.png",
+    lore: "Cosmic tone represents transcendence and timelessness. You hold space for cycles to complete, yet must avoid detachment from reality."
+  }
+  // ... full tones dataset from before
+};
+const mayanCompatibility = {
+	 "Imix": { allies: ["Chuen", "Ben"], supportive: ["Ahau", "Men"], challenge: ["Etznab", "Cauac"] },
+  "Ik": { allies: ["Eb", "Men"], supportive: ["Ix", "Caban"], challenge: ["Cimi", "Etznab"] },
+  "Akbal": { allies: ["Ix", "Caban"], supportive: ["Cimi", "Chuen"], challenge: ["Lamat", "Oc"] },
+  "Kan": { allies: ["Muluc", "Chicchan"], supportive: ["Lamat", "Men"], challenge: ["Ix", "Cib"] },
+  "Chicchan": { allies: ["Men", "Cimi"], supportive: ["Kan", "Etznab"], challenge: ["Oc", "Akbal"] },
+  "Cimi": { allies: ["Cauac", "Akbal"], supportive: ["Chicchan", "Etznab"], challenge: ["Ik", "Ben"] },
+  "Manik": { allies: ["Eb", "Lamat"], supportive: ["Muluc", "Ahau"], challenge: ["Cauac", "Cimi"] },
+  "Lamat": { allies: ["Kan", "Muluc"], supportive: ["Manik", "Ahau"], challenge: ["Akbal", "Cib"] },
+  "Muluc": { allies: ["Oc", "Kan"], supportive: ["Lamat", "Cauac"], challenge: ["Cib", "Etznab"] },
+  "Oc": { allies: ["Muluc", "Eb"], supportive: ["Ben", "Chuen"], challenge: ["Chicchan", "Akbal"] },
+  "Chuen": { allies: ["Imix", "Ben"], supportive: ["Akbal", "Ix"], challenge: ["Men", "Caban"] },
+  "Eb": { allies: ["Ik", "Manik"], supportive: ["Oc", "Cauac"], challenge: ["Ix", "Ahau"] },
+  "Ben": { allies: ["Chuen", "Men"], supportive: ["Oc", "Ix"], challenge: ["Cimi", "Etznab"] },
+  "Ix": { allies: ["Akbal", "Caban"], supportive: ["Chuen", "Ben"], challenge: ["Kan", "Eb"] },
+  "Men": { allies: ["Chicchan", "Ben"], supportive: ["Kan", "Ahau"], challenge: ["Chuen", "Muluc"] },
+  "Cib": { allies: ["Caban", "Ix"], supportive: ["Etznab", "Chicchan"], challenge: ["Muluc", "Lamat"] },
+  "Caban": { allies: ["Akbal", "Cib"], supportive: ["Ix", "Etznab"], challenge: ["Men", "Oc"] },
+  "Etznab": { allies: ["Cauac", "Cib"], supportive: ["Chicchan", "Caban"], challenge: ["Imix", "Muluc"] },
+  "Cauac": { allies: ["Cimi", "Etznab"], supportive: ["Muluc", "Eb"], challenge: ["Manik", "Ahau"] },
+  "Ahau": { allies: ["Imix", "Men"], supportive: ["Lamat", "Kan"], challenge: ["Eb", "Cauac"] }
+  // ... compatibility dataset from before
+};
+
+// ===== Egyptian Horoscope =====
+const egyptianData = {
+  "Nile": {
+    quick: "The Flow of Beginnings.",
+    image: "images/egyptian/nile.png",
+    lore: "Nile is the only non-deity sign, representing pure potential and the source of life. You are adaptable, nurturing, and often a catalyst for change. Your challenge is committing to a direction without being swept away by others’ currents."
+  },
+  "Amon-Ra": {
+    quick: "The Radiant Leader.",
+    image: "images/egyptian/amon_ra.png",
+    lore: "Amon-Ra symbolizes creation, vitality, and authority. You are a source of inspiration and guidance. Your challenge is avoiding pride that blinds you to counsel."
+  },
+  "Mut": {
+    quick: "The Protective Matriarch.",
+    image: "images/egyptian/mut.png",
+    lore: "Mut embodies motherhood, stability, and loyalty. You provide security and guidance to those you care for. Your challenge is letting go when it’s time for independence."
+  },
+  "Geb": {
+    quick: "The Grounded Provider.",
+    image: "images/egyptian/geb.png",
+    lore: "Geb represents earth, abundance, and physical well-being. You are steady, resourceful, and practical. Your challenge is avoiding over-attachment to the material."
+  },
+  "Osiris": {
+    quick: "The Restorer.",
+    image: "images/egyptian/osiris.png",
+    lore: "Osiris governs renewal, transformation, and justice. You are a bridge between the old and the new. Your challenge is trusting in cycles of change rather than clinging to the past."
+  },
+  "Isis": {
+    quick: "The Nurturing Visionary.",
+    image: "images/egyptian/isis.png",
+    lore: "Isis represents magic, intuition, and compassion. You inspire others through care and wisdom. Your challenge is protecting your own energy while supporting others."
+  },
+  "Thoth": {
+    quick: "The Keeper of Knowledge.",
+    image: "images/egyptian/thoth.png",
+    lore: "Thoth is intellect, writing, and sacred law. You excel in learning and teaching. Your challenge is balancing wisdom with emotional connection."
+  },
+  "Horus": {
+    quick: "The Watchful Protector.",
+    image: "images/egyptian/horus.png",
+    lore: "Horus symbolizes vision, strategy, and guardianship. You see threats before they arise and defend what you value. Your challenge is trusting others to share responsibility."
+  },
+  "Anubis": {
+    quick: "The Guide Between Worlds.",
+    image: "images/egyptian/anubis.png",
+    lore: "Anubis rules transitions, intuition, and unseen realms. You help others navigate endings and beginnings. Your challenge is not becoming detached from the living world."
+  },
+  "Seth": {
+    quick: "The Force of Disruption.",
+    image: "images/egyptian/seth.png",
+    lore: "Seth embodies change, conflict, and the breaking of old patterns. You are a catalyst for transformation, though your challenge is learning when stability is needed."
+  },
+  "Bastet": {
+    quick: "The Joyful Guardian.",
+    image: "images/egyptian/bastet.png",
+    lore: "Bastet blends playfulness, beauty, and protection. You bring lightness to those around you while keeping danger at bay. Your challenge is avoiding complacency."
+  },
+  "Sekhmet": {
+    quick: "The Fierce Healer.",
+    image: "images/egyptian/sekhmet.png",
+    lore: "Sekhmet is strength, courage, and righteous action. You protect the vulnerable and fight for justice. Your challenge is tempering intensity with compassion."
+  }
+  // ... full Egyptian dataset from before
+};
+
+// ===== Celtic Horoscope =====
+const celticData = { 
+    "Birch": {
+    quick: "The Pioneer.",
+    image: "images/celtic/birch.png",
+    lore: "Birch signals renewal, beginnings, and determination. You are driven to overcome obstacles and start fresh. Your challenge is pacing your ambition to avoid burnout."
+  },
+  "Rowan": {
+    quick: "The Thinker.",
+    image: "images/celtic/rowan.png",
+    lore: "Rowan is insight, protection, and visionary thought. You see hidden patterns and offer guidance. Your challenge is acting decisively on your ideas."
+  },
+  "Ash": {
+    quick: "The Enchanter.",
+    image: "images/celtic/ash.png",
+    lore: "Ash represents connection, intuition, and the weaving of stories. You unite people and ideas. Your challenge is staying grounded in practical action."
+  },
+  "Alder": {
+    quick: "The Trailblazer.",
+    image: "images/celtic/alder.png",
+    lore: "Alder is confidence, initiative, and leadership. You thrive in action and inspire trust. Your challenge is listening as much as leading."
+  },
+  "Willow": {
+    quick: "The Moon’s Child.",
+    image: "images/celtic/willow.png",
+    lore: "Willow is intuition, cycles, and adaptability. You understand emotions deeply. Your challenge is not losing yourself in others’ tides."
+  },
+  "Hawthorn": {
+    quick: "The Illusion-Breaker.",
+    image: "images/celtic/hawthorn.png",
+    lore: "Hawthorn blends mystery with surprise. You are more than you appear, holding both fire and gentleness. Your challenge is embracing vulnerability."
+  },
+  "Oak": {
+    quick: "The Stabilizer.",
+    image: "images/celtic/oak.png",
+    lore: "Oak is strength, endurance, and reliability. You are a pillar for others. Your challenge is allowing flexibility when life shifts."
+  },
+  "Holly": {
+    quick: "The Warrior.",
+    image: "images/celtic/holly.png",
+    lore: "Holly is protection, honor, and decisive action. You stand firm in adversity. Your challenge is avoiding unnecessary battles."
+  },
+  "Hazel": {
+    quick: "The Knower.",
+    image: "images/celtic/hazel.png",
+    lore: "Hazel is wisdom, inspiration, and the spark of creativity. You seek truth and beauty. Your challenge is sharing your insight without arrogance."
+  },
+  "Vine": {
+    quick: "The Harmonizer.",
+    image: "images/celtic/vine.png",
+    lore: "Vine is balance, adaptability, and diplomacy. You navigate complexities with grace. Your challenge is making firm choices."
+  },
+  "Ivy": {
+    quick: "The Survivor.",
+    image: "images/celtic/ivy.png",
+    lore: "Ivy is persistence, determination, and growth through challenges. You find a way forward where others see none. Your challenge is resting when needed."
+  },
+  "Reed": {
+    quick: "The Truth-Seeker.",
+    image: "images/celtic/reed.png",
+    lore: "Reed is clarity, purpose, and the cutting away of falsehoods. You seek the heart of matters. Your challenge is tempering bluntness with care."
+  },
+  "Elder": {
+    quick: "The Transformer.",
+    image: "images/celtic/elder.png",
+    lore: "Elder marks endings and beginnings, transformation, and renewal. You embrace change as growth. Your challenge is recognizing when cycles have truly closed."
+  },
+  "The Grove": {
+    quick: "The Timeless Space.",
+    image: "images/celtic/the_grove.png",
+    lore: "The Grove is the space between — sacred pause, reflection, and integration. You carry wisdom beyond time. Your challenge is returning from stillness to act in the world."
+  }
+ 
+  // ... full Celtic dataset from before
+};
+
+// ===== Master Horoscope Object =====
+const horoscopeSystems = {
+  western: westernData,
+  chinese: chineseData,
+  mayan: { days: mayanDays, tones: mayanTones, compatibility: mayanCompatibility },
+  egyptian: egyptianData,
+  celtic: celticData
+};
+</script>
+
+<script>
+// ====== WESTERN ZODIAC ======
+function getWesternSign(date) {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const ranges = [
+    ["Capricorn", 1, 19], ["Aquarius", 2, 18], ["Pisces", 3, 20],
+    ["Aries", 4, 19], ["Taurus", 5, 20], ["Gemini", 6, 20],
+    ["Cancer", 7, 22], ["Leo", 8, 22], ["Virgo", 9, 22],
+    ["Libra", 10, 22], ["Scorpio", 11, 21], ["Sagittarius", 12, 21],
+    ["Capricorn", 12, 31]
+  ];
+  for (let [sign, month, day] of ranges) {
+    if (m < month || (m === month && d <= day)) return sign;
+  }
+  return "Capricorn";
+}
+
+// ====== CHINESE ZODIAC ======
+// Chinese New Year dates (1900–2100) – shortened here, should be full for your range
+const CNY_DATES = {
+  1991: "1991-02-15",
+  1992: "1992-02-04",
+  // ... full list
+};
+const animals = ["Rat","Ox","Tiger","Rabbit","Dragon","Snake","Horse","Goat","Monkey","Rooster","Dog","Pig"];
+const elements = ["Wood","Wood","Fire","Fire","Earth","Earth","Metal","Metal","Water","Water"];
+
+function getChineseSign(date) {
+  let year = date.getFullYear();
+  const cny = new Date(CNY_DATES[year]);
+  if (date < cny) year -= 1;
+  const cycleYear = (year - 1984) % 60; // 1984 = Wood Rat start of cycle
+  const animal = animals[cycleYear % 12];
+  const element = elements[cycleYear % 10];
+  return `${element} ${animal}`;
+}
+
+// ====== MAYAN TZOLK'IN ======
+const mayanDayNames = Object.keys(mayanDays);
+function getMayanDaySign(date) {
+  // Base reference: 1 Imix on 2021-01-01 (adjust to your dataset)
+  const baseDate = new Date("2021-01-01");
+  const daysDiff = Math.floor((date - baseDate) / (1000 * 60 * 60 * 24));
+  const index = ((daysDiff % 20) + 20) % 20;
+  return mayanDayNames[index];
+}
+function getMayanTone(date) {
+  const baseDate = new Date("2021-01-01");
+  const daysDiff = Math.floor((date - baseDate) / (1000 * 60 * 60 * 24));
+  return ((daysDiff % 13) + 13) % 13 + 1;
+}
+
+// ====== EGYPTIAN ZODIAC ======
+const egyptianRanges = [
+  ["Nile", "01-01", "01-07"], ["Amun-Ra", "01-08", "01-21"], ["Mut", "01-22", "01-31"],
+  // ... full date ranges for all signs
+];
+function getEgyptianSign(date) {
+  const md = (date.getMonth()+1).toString().padStart(2,"0") + "-" + date.getDate().toString().padStart(2,"0");
+  for (let [sign, start, end] of egyptianRanges) {
+    if (start <= md && md <= end) return sign;
+  }
+  return "Nile";
+}
+
+// ====== CELTIC TREE ZODIAC ======
+const celticRanges = [
+  ["Birch","12-24","01-20"],["Rowan","01-21","02-17"],["Ash","02-18","03-17"],
+  ["Alder","03-18","04-14"],["Willow","04-15","05-12"],["Hawthorn","05-13","06-09"],
+  ["Oak","06-10","07-07"],["Holly","07-08","08-04"],["Hazel","08-05","09-01"],
+  ["Vine","09-02","09-29"],["Ivy","09-30","10-27"],["Reed","10-28","11-24"],
+  ["Elder","11-25","12-23"]
+];
+function getCelticSign(date) {
+  const md = (date.getMonth()+1).toString().padStart(2,"0") + "-" + date.getDate().toString().padStart(2,"0");
+  for (let [sign, start, end] of celticRanges) {
+    if (start <= md && md <= end) return sign;
+  }
+  // Cross-year Birch check
+  if (md >= "12-24" || md <= "01-20") return "Birch";
+  return "Birch";
+}
+
+// ====== RENDER LOGIC ======
+const resultsDiv = document.getElementById("results");
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modal-title");
+const modalImage = document.getElementById("modal-image");
+const modalLore = document.getElementById("modal-lore");
+const modalClose = document.getElementById("modal-close");
+
+document.getElementById("birth-form").addEventListener("submit", e => {
+  e.preventDefault();
+  resultsDiv.innerHTML = "";
+  const birthDate = new Date(document.getElementById("birthdate").value);
+
+  const western = getWesternSign(birthDate);
+  const chinese = getChineseSign(birthDate);
+  const mayanDay = getMayanDaySign(birthDate);
+  const mayanTone = getMayanTone(birthDate);
+  const egyptian = getEgyptianSign(birthDate);
+  const celtic = getCelticSign(birthDate);
+
+  const systems = [
+    { name: "Western", data: horoscopeSystems.western[western], label: western },
+    { name: "Chinese", data: horoscopeSystems.chinese[chinese], label: chinese },
+    { name: "Mayan Day", data: horoscopeSystems.mayan.days[mayanDay], label: mayanDay },
+    { name: "Mayan Tone", data: horoscopeSystems.mayan.tones[mayanTone], label: `Tone ${mayanTone}` },
+    { name: "Egyptian", data: horoscopeSystems.egyptian[egyptian], label: egyptian },
+    { name: "Celtic", data: horoscopeSystems.celtic[celtic], label: celtic }
+  ];
+
+  systems.forEach(sys => {
+    if (!sys.data) return;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${sys.data.image}" alt="${sys.label}">
+      <h2>${sys.name}: ${sys.label}</h2>
+      <p>${sys.data.quick}</p>
+    `;
+    card.addEventListener("click", () => {
+      modalTitle.textContent = `${sys.name}: ${sys.label}`;
+      modalImage.src = sys.data.image;
+      modalLore.textContent = sys.data.lore;
+      modal.style.display = "flex";
+    });
+    resultsDiv.appendChild(card);
+
+    // Show compatibility if Mayan Day
+    if (sys.name === "Mayan Day" && horoscopeSystems.mayan.compatibility[mayanDay]) {
+      const comp = horoscopeSystems.mayan.compatibility[mayanDay];
+      const compDiv = document.createElement("div");
+      compDiv.style.marginTop = "1rem";
+      compDiv.innerHTML = `
+        <strong>Compatibility:</strong><br>
+        Allies: ${comp.allies.join(", ")}<br>
+        Supportive: ${comp.supportive.join(", ")}<br>
+        Challenge: ${comp.challenge.join(", ")}
+      `;
+      resultsDiv.appendChild(compDiv);
+    }
+  });
+});
+
+modalClose.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => {
+  if (e.target === modal) modal.style.display = "none";
+});
+</script>
+
+</body>
+</html>
+
+
